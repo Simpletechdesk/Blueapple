@@ -1,2 +1,2 @@
 [build]
-  publish = "blue_apple_app"
+  publish = "blue_apple_app/public"
