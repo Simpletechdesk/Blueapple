@@ -1,5 +1,5 @@
 [build]
-  publish = "public"
+  publish = "blue_apple_app/public"
 
 [functions]
   directory = "netlify/functions"
