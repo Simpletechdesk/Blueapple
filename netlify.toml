@@ -1,2 +1,4 @@
 [build]
   publish = "blue_apple_app/public"
+[functions]
+  directory = "blue_apple_app/netlify/functions"
