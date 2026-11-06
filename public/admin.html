@@ -1,0 +1,59 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Menu Admin</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0b192c;margin:0;padding:14px;color:#222}.w{max-width:780px;margin:auto}h1{color:#d4af37;font-size:22px}
+.c{background:#fdfbf7;border-radius:10px;padding:12px;margin-bottom:10px}input,select,textarea{padding:9px;border:1px solid #ccc;border-radius:6px;font-size:16px;width:100%;box-sizing:border-box;font-family:inherit}
+.r{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}.r3{grid-template-columns:2fr 1fr}button{padding:10px 14px;border:0;border-radius:6px;font-size:15px;margin:2px 0}
+.p{background:#00348a;color:#fff}.d{background:#c0392b;color:#fff}.l{background:#ddd}.h{display:none}#bar{position:sticky;top:0;background:#0b192c;padding:8px 0;z-index:5}
+#st{color:#f3e5ab;font-weight:600;margin:6px 0}.bn{background:#f3e5ab;padding:10px;border-radius:8px;margin-bottom:10px}
+</style></head><body><div class="w"><h1>Blue Apple Menu Admin</h1>
+<div id="login" class="c"><h3 id="lt" style="margin:0 0 8px">Admin login</h3>
+<input id="em0" type="email" placeholder="Email" style="margin-bottom:6px"><input type="password" id="pw" placeholder="Password" style="margin-bottom:6px">
+<input id="code" placeholder="Invite code (the owner's setup code)" class="h" style="margin-bottom:6px">
+<button class="p" id="go" onclick="login()">Log in</button> <button class="l" id="sw" onclick="toggle()">Create account</button>
+<div id="slots" style="font-size:13px;margin-top:6px"></div><div id="le" style="color:#c0392b"></div></div>
+<div id="ed" class="h"><div id="bn" class="bn"></div>
+<div id="bar"><input id="q" placeholder="Search items..." oninput="render()"><div id="st"></div><button class="l" onclick="add()">+ Add item</button> <button class="p" onclick="save()">Save changes</button></div>
+<div id="list"></div></div></div>
+<datalist id="subs"></datalist>
+<script>
+let menu=[],tok="",info={},mode="login";
+const $=i=>document.getElementById(i);
+fetch("/api/auth").then(r=>r.json()).then(d=>{$("slots").textContent=d.users+" of "+d.max+" admin accounts created";if(d.full)$("sw").classList.add("h")});
+try{tok=localStorage.getItem("tok")||""}catch(e){}
+function toggle(){mode=mode=="login"?"register":"login";const r=mode=="register";$("code").classList.toggle("h",!r);$("lt").textContent=r?"Create admin account":"Admin login";$("go").textContent=r?"Create account":"Log in";$("sw").textContent=r?"Back to login":"Create account"}
+async function login(){$("le").textContent="";
+ const a=await fetch("/api/auth",{method:"POST",body:JSON.stringify({action:mode,email:$("em0").value,password:$("pw").value,code:$("code").value})});
+ const d=await a.json();if(!a.ok){$("le").textContent=d.error;return}
+ tok=d.token;try{localStorage.setItem("tok",tok)}catch(e){}
+ await enter()}
+async function enter(){
+ const r=await fetch("/api/menu",{method:"POST",headers:{"x-session":tok}});
+ if(!r.ok)return;
+ info=await r.json();
+ let m=await (await fetch("/api/menu")).json();
+ if(!m.length)m=await (await fetch("/api/menu?defaults=1")).json();
+ menu=m;$("login").classList.add("h");$("ed").classList.remove("h");banner();render()}
+if(tok)enter();
+function banner(){const d=t=>new Date(t).toLocaleDateString();
+ let h=info.paidUntil>Date.now()?`Subscription active until <b>${d(info.paidUntil)}</b>. `:info.onTrial?`Free trial ends <b>${d(info.trialEndsAt)}</b>. `:`<b>Your access has expired.</b> `;
+ h+=`<br><input id="em" type="email" placeholder="Billing email" style="margin:6px 0"><button class="p" onclick="pay('monthly')">₦15,000 / month</button> <button class="p" onclick="pay('yearly')">₦115,000 / year</button>`;
+ $("bn").innerHTML=h}
+async function pay(plan){const r=await fetch("/api/subscribe",{method:"POST",headers:{"x-session":tok},body:JSON.stringify({email:$("em").value,plan})});
+ const d=await r.json();if(d.url)location=d.url;else alert(d.error||"Could not start payment")}
+function render(){const q=$("q").value.toLowerCase(),L=$("list");L.innerHTML="";
+ $("subs").innerHTML=[...new Set(menu.map(i=>i.subcategory))].map(s=>`<option value="${s.replace(/"/g,"")}">`).join("");
+ $("subs").id="subs";document.body.appendChild($("subs"));
+ menu.forEach((it,ix)=>{if(q&&!(it.title+it.subcategory).toLowerCase().includes(q))return;
+  const c=document.createElement("div");c.className="c";
+  c.innerHTML=`<div class="r r3"><input placeholder="Name"><input placeholder="Price ₦" type="number" min="0"></div>
+  <div class="r"><select><option value="breakfast">Breakfast</option><option value="food">Food</option><option value="drinks">Drinks</option></select><input list="subs" placeholder="Section"></div>
+  <textarea rows="2" placeholder="Description"></textarea><button class="d">Delete</button>`;
+  const [n,p,s,sub,ta]=[...c.querySelectorAll("input,select,textarea")].slice(0,5);
+  n.value=it.title;p.value=it.price;s.value=it.category;sub.value=it.subcategory;ta.value=it.description;
+  n.oninput=()=>it.title=n.value;p.oninput=()=>it.price=+p.value||0;s.onchange=()=>it.category=s.value;sub.oninput=()=>it.subcategory=sub.value;ta.oninput=()=>it.description=ta.value;
+  c.querySelector(".d").onclick=()=>{if(confirm("Delete "+(it.title||"this item")+"?")){menu.splice(ix,1);render()}};L.appendChild(c)})}
+function add(){menu.unshift({id:"i"+Date.now(),title:"",price:0,category:"food",subcategory:"Starters",description:""});$("q").value="";render()}
+async function save(){$("st").textContent="Saving...";
+ const r=await fetch("/api/menu",{method:"PUT",headers:{"x-session":tok,"Content-Type":"application/json"},body:JSON.stringify(menu)});
+ $("st").textContent=r.ok?"Saved. Guests now see the new menu.":r.status==402?"Access expired. Please subscribe above.":"Not saved. Try again."}
+</script></body></html>
