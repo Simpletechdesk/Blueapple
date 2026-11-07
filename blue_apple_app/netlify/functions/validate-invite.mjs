@@ -1,5 +1,4 @@
-javascript
-import { getStore } from "@netlify/blob";
+import { getStore } from "@netlify/blobs";
 
 const json = (d, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
 
