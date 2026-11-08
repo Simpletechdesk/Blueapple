@@ -1,6 +1,8 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Super Admin</title>
 <style>
 body{font-family:system-ui,sans-serif;background:#060d17;margin:0;padding:14px;color:#222}.w{max-width:860px;margin:auto}h1,h2{color:#d4af37}
+.header-brand{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.header-logo{height:45px;object-fit:contain;background:#fff;padding:4px 8px;border-radius:6px;}
 .c{background:#fdfbf7;border-radius:10px;padding:16px;margin-bottom:10px;position:relative;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
 input{padding:10px;border:1px solid #ccc;border-radius:6px;font-size:16px;width:100%;box-sizing:border-box;margin-bottom:8px}
 button{padding:8px 14px;border:0;border-radius:6px;font-size:14px;margin:2px;background:#e2e8f0;cursor:pointer;font-weight:500;transition:opacity 0.2s}
@@ -42,8 +44,23 @@ button:hover{opacity:0.9}button:disabled{opacity:0.6;cursor:not-allowed}
 .auth-primary-row button {
   flex: 1;
 }
+
+/* Print Styles */
+@media print {
+  body { background: #fff; color: #000; padding: 0; }
+  .w { max-width: 100%; }
+  #lg, #bill, #us, .header-brand button, .d, .p, button { display: none !important; }
+  #main.h { display: block !important; }
+  #ac { box-shadow: none; border: 1px solid #ccc; }
+}
 </style></head>
-<body><div class="w"><h1>Super Admin</h1>
+<body>
+<div class="w">
+  <div class="header-brand">
+    <img src="Blue AppleHotel Logo.jpeg" alt="Blue Apple Boutique Hotel Logo" class="header-logo">
+    <h1 style="margin:0">Super Admin</h1>
+  </div>
+
 <div id="lg" class="c">
   <!-- Spinner Overlay starts inactive/hidden -->
   <div id="spinOverlay" class="spinner-overlay" style="display:none;"><div class="spinner"></div></div>
@@ -57,12 +74,23 @@ button:hover{opacity:0.9}button:disabled{opacity:0.6;cursor:not-allowed}
   </div>
   <div id="er" style="color:#c0392b;margin-top:8px"></div>
 </div>
+
 <div id="main" class="h">
-  <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div></div>
     <button class="d" onclick="localStorage.removeItem('tok');location.reload();">Sign Out</button>
   </div>
-  <div class="c" id="bill"></div><h2>Admin users</h2><div class="c" id="us"></div><h2>Recent activity</h2><div class="c" id="ac"></div>
-</div></div>
+  <div class="c" id="bill"></div>
+  <h2>Admin users</h2>
+  <div class="c" id="us"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:15px">
+    <h2 style="margin:0">Recent activity</h2>
+    <button class="p" onclick="window.print()">Print Activity Report</button>
+  </div>
+  <div class="c" id="ac" style="margin-top:10px"></div>
+</div>
+
+</div>
 <script>
 let tok="";try{tok=localStorage.getItem("tok")||""}catch(e){}
 const $=i=>document.getElementById(i),D=t=>t?new Date(t).toLocaleString():"never",esc=s=>String(s).replace(/[&<>"']/g,c=>"&#"+c.charCodeAt(0)+";");
