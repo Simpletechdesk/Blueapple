@@ -1,18 +1,99 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Super Admin</title>
-<style>body{font-family:system-ui,sans-serif;background:#060d17;margin:0;padding:14px;color:#222}.w{max-width:860px;margin:auto}h1,h2{color:#d4af37}
-.c{background:#fdfbf7;border-radius:10px;padding:12px;margin-bottom:10px}input{padding:9px;border:1px solid #ccc;border-radius:6px;font-size:16px;width:100%;box-sizing:border-box;margin-bottom:6px}
-button{padding:7px 10px;border:0;border-radius:6px;font-size:14px;margin:2px;background:#ddd}.p{background:#00348a;color:#fff}.d{background:#c0392b;color:#fff}.h{display:none}
-.u{border-bottom:1px solid #ddd;padding:8px 0}.b{font-size:12px;padding:2px 6px;border-radius:8px;background:#f3e5ab}.a{font-size:13px;padding:3px 0;border-bottom:1px solid #eee}</style></head>
+<style>
+body{font-family:system-ui,sans-serif;background:#060d17;margin:0;padding:14px;color:#222}.w{max-width:860px;margin:auto}h1,h2{color:#d4af37}
+.c{background:#fdfbf7;border-radius:10px;padding:16px;margin-bottom:10px;position:relative;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+input{padding:10px;border:1px solid #ccc;border-radius:6px;font-size:16px;width:100%;box-sizing:border-box;margin-bottom:8px}
+button{padding:8px 14px;border:0;border-radius:6px;font-size:14px;margin:2px;background:#e2e8f0;cursor:pointer;font-weight:500;transition:opacity 0.2s}
+button:hover{opacity:0.9}button:disabled{opacity:0.6;cursor:not-allowed}
+.p{background:#00348a;color:#fff}.d{background:#c0392b;color:#fff}.h{display:none !important}
+.u{border-bottom:1px solid #ddd;padding:8px 0}.b{font-size:12px;padding:2px 6px;border-radius:8px;background:#f3e5ab}.a{font-size:13px;padding:3px 0;border-bottom:1px solid #eee}
+
+/* Circular progress bar overlay style */
+.spinner-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(253, 251, 247, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  z-index: 10;
+}
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 4px solid rgba(0, 52, 138, 0.2);
+  border-radius: 50%;
+  border-top-color: #00348a;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.auth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+.auth-primary-row {
+  display: flex;
+  gap: 10px;
+}
+.auth-primary-row button {
+  flex: 1;
+}
+</style></head>
 <body><div class="w"><h1>Super Admin</h1>
-<div id="lg" class="c"><input id="e" type="email" placeholder="Super user email"><input id="p" type="password" placeholder="Password"><button class="p" onclick="login()">Log in</button><div id="er" style="color:#c0392b"></div></div>
-<div id="main" class="h"><div class="c" id="bill"></div><h2>Admin users</h2><div class="c" id="us"></div><h2>Recent activity</h2><div class="c" id="ac"></div></div></div>
+<div id="lg" class="c">
+  <!-- Spinner Overlay starts inactive/hidden -->
+  <div id="spinOverlay" class="spinner-overlay" style="display:none;"><div class="spinner"></div></div>
+
+  <h3 style="margin:0 0 12px">Super user login</h3>
+  <input id="e" type="email" placeholder="Super user email"><input id="p" type="password" placeholder="Password">
+  <div class="auth-buttons">
+    <div class="auth-primary-row">
+      <button class="p" onclick="login()">Log in</button>
+    </div>
+  </div>
+  <div id="er" style="color:#c0392b;margin-top:8px"></div>
+</div>
+<div id="main" class="h">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+    <button class="d" onclick="localStorage.removeItem('tok');location.reload();">Sign Out</button>
+  </div>
+  <div class="c" id="bill"></div><h2>Admin users</h2><div class="c" id="us"></div><h2>Recent activity</h2><div class="c" id="ac"></div>
+</div></div>
 <script>
 let tok="";try{tok=localStorage.getItem("tok")||""}catch(e){}
 const $=i=>document.getElementById(i),D=t=>t?new Date(t).toLocaleString():"never",esc=s=>String(s).replace(/[&<>"']/g,c=>"&#"+c.charCodeAt(0)+";");
-async function login(){const r=await fetch("/api/auth",{method:"POST",body:JSON.stringify({action:"login",email:$("e").value,password:$("p").value})});
- const d=await r.json();if(!r.ok){$("er").textContent=d.error;return}tok=d.token;try{localStorage.setItem("tok",tok)}catch(e){}load()}
+async function login(){
+ $("er").textContent="";
+ 
+ // Activate spinner and disable inputs on button click
+ $("spinOverlay").style.display = "flex";
+ const inputs = $("lg").querySelectorAll("input, button");
+ inputs.forEach(el => el.disabled = true);
+
+ try {
+   const r=await fetch("/api/auth",{method:"POST",body:JSON.stringify({action:"login",email:$("e").value,password:$("p").value})});
+   const d=await r.json();
+   if(!r.ok){
+     $("er").textContent=d.error;
+     // On error: hide spinner and re-enable inputs until next click
+     $("spinOverlay").style.display = "none";
+     inputs.forEach(el => el.disabled = false);
+     return;
+   }
+   tok=d.token;try{localStorage.setItem("tok",tok)}catch(e){}
+   load();
+ } catch(err) {
+   $("er").textContent="Connection error. Try again.";
+   $("spinOverlay").style.display = "none";
+   inputs.forEach(el => el.disabled = false);
+ }
+}
 async function load(){if(!tok)return;const r=await fetch("/api/super",{headers:{"x-session":tok}});
- if(r.status==403){$("er").textContent="This account is not the super user.";return}if(!r.ok)return;
+ if(r.status==403){$("er").textContent="This account is not the super user.";$("spinOverlay").style.display="none";const inputs = $("lg").querySelectorAll("input, button");inputs.forEach(el => el.disabled = false);return}if(!r.ok)return;
  const d=await r.json();$("lg").classList.add("h");$("main").classList.remove("h");
  $("bill").innerHTML=`Subscription: <b>${d.billing.access?"active / on trial":"EXPIRED"}</b><br>Trial ends: ${D(d.billing.trialEndsAt)}<br>Paid until: ${D(d.billing.paidUntil)}`;
  $("us").innerHTML=d.users.map(u=>`<div class="u"><b>${esc(u.email)}</b> ${u.super?'<span class="b">super</span>':""} ${u.disabled?'<span class="b" style="background:#f5b7b1">disabled</span>':""}<br><small>Created ${D(u.created)} · Last login ${D(u.lastLogin)}</small><br>
@@ -22,5 +103,5 @@ async function act(action,email,newPassword){const r=await fetch("/api/super",{m
  const d=await r.json();if(!r.ok)alert(d.error);load()}
 function rp(e){const n=prompt("New password for "+e+" (8+ characters):");if(n)act("resetpw",e,n)}
 function del(e){if(confirm("Delete "+e+"? This frees their slot."))act("delete",e)}
-load();
+if(tok)load();
 </script></body></html>
